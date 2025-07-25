@@ -1,4 +1,6 @@
 #![allow(unused)]
+//! Bitcoin Capstone Project - RPC interaction with Bitcoin Core
+//! This program implements all required Bitcoin RPC operations for the capstone project
 use bitcoin::hex::DisplayHex;
 use bitcoincore_rpc::bitcoin::{Amount, Network};
 use bitcoincore_rpc::{Auth, Client, RpcApi};
