@@ -135,13 +135,13 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
     // Connect to Miner wallet specifically
     let miner_rpc = Client::new(
-        &format!("{}/wallet/Miner", RPC_URL),
+        &format!("{RPC_URL}/wallet/Miner"),
         Auth::UserPass(RPC_USER.to_owned(), RPC_PASS.to_owned()),
     )?;
 
     // Connect to Trader wallet specifically
     let trader_rpc = Client::new(
-        &format!("{}/wallet/Trader", RPC_URL),
+        &format!("{RPC_URL}/wallet/Trader"),
         Auth::UserPass(RPC_USER.to_owned(), RPC_PASS.to_owned()),
     )?;
 
@@ -151,7 +151,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let mining_address = mining_address_unchecked
         .require_network(Network::Regtest)
         .expect("Failed to set regtest network on mining address");
-    println!("Mining address generated: {}", mining_address);
+    println!("Mining address generated: {mining_address}");
 
     // Step 3: Mine blocks until Miner wallet has positive balance
     println!("\n=== Mining Blocks for Initial Balance ===");
@@ -178,15 +178,12 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
         // Safety check to avoid infinite loop
         if blocks_mined > 200 {
-            println!(
-                "Mined {} blocks, breaking to avoid infinite loop",
-                blocks_mined
-            );
+            println!("Mined {blocks_mined} blocks, breaking to avoid infinite loop");
             break;
         }
     }
 
-    println!("Mined {} blocks to achieve positive balance", blocks_mined);
+    println!("Mined {blocks_mined} blocks to achieve positive balance");
     println!("Miner wallet balance: {} BTC", miner_balance.to_btc());
 
     // Comment about wallet balance behavior:
@@ -200,7 +197,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let trader_address = trader_address_unchecked
         .require_network(Network::Regtest)
         .expect("Failed to set regtest network on trader address");
-    println!("Trader receiving address: {}", trader_address);
+    println!("Trader receiving address: {trader_address}");
 
     // Step 5: Send 20 BTC from Miner to Trader
     println!("\n=== Sending 20 BTC from Miner to Trader ===");
@@ -218,7 +215,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
         None, // estimate_mode
     )?;
 
-    println!("Transaction sent with txid: {}", txid);
+    println!("Transaction sent with txid: {txid}");
 
     // Step 6: Check transaction in mempool
     println!("\n=== Checking Transaction in Mempool ===");
@@ -231,7 +228,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("\n=== Mining Block to Confirm Transaction ===");
     let confirmation_blocks = rpc.generate_to_address(1, &mining_address)?;
     let confirmation_block_hash = &confirmation_blocks[0];
-    println!("Mined confirmation block: {}", confirmation_block_hash);
+    println!("Mined confirmation block: {confirmation_block_hash}");
 
     // Step 8: Extract transaction details
     println!("\n=== Extracting Transaction Details ===");
@@ -293,17 +290,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("\n=== Writing Results to out.txt ===");
 
     let output_content = format!(
-        "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
-        transaction_id,
-        miner_input_address,
-        miner_input_amount,
-        trader_output_address,
-        trader_output_amount,
-        miner_change_address,
-        miner_change_amount,
-        transaction_fee,
-        block_height,
-        block_hash
+        "{transaction_id}\n{miner_input_address}\n{miner_input_amount}\n{trader_output_address}\n{trader_output_amount}\n{miner_change_address}\n{miner_change_amount}\n{transaction_fee}\n{block_height}\n{block_hash}"
     );
 
     // Write to out.txt in the project root (parent directory)
@@ -313,21 +300,12 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
     println!("Transaction details written to out.txt");
     println!("\nSummary:");
-    println!("- Transaction ID: {}", transaction_id);
-    println!(
-        "- Miner input: {} BTC from {}",
-        miner_input_amount, miner_input_address
-    );
-    println!(
-        "- Trader received: {} BTC at {}",
-        trader_output_amount, trader_output_address
-    );
-    println!(
-        "- Miner change: {} BTC to {}",
-        miner_change_amount, miner_change_address
-    );
-    println!("- Transaction fee: {} BTC", transaction_fee);
-    println!("- Confirmed in block {} ({})", block_height, block_hash);
+    println!("- Transaction ID: {transaction_id}");
+    println!("- Miner input: {miner_input_amount} BTC from {miner_input_address}");
+    println!("- Trader received: {trader_output_amount} BTC at {trader_output_address}");
+    println!("- Miner change: {miner_change_amount} BTC to {miner_change_address}");
+    println!("- Transaction fee: {transaction_fee} BTC");
+    println!("- Confirmed in block {block_height} ({block_hash})");
 
     Ok(())
 }
@@ -340,7 +318,7 @@ fn create_or_load_wallet(
     // Try to load the wallet first
     match rpc.load_wallet(wallet_name) {
         Ok(_) => {
-            println!("Loaded existing wallet: {}", wallet_name);
+            println!("Loaded existing wallet: {wallet_name}");
             Ok(CreateWalletResult {
                 name: wallet_name.to_string(),
                 warning: None,
@@ -350,7 +328,7 @@ fn create_or_load_wallet(
             // If loading fails, try to create the wallet
             match rpc.create_wallet(wallet_name, None, None, None, None) {
                 Ok(result) => {
-                    println!("Created new wallet: {}", wallet_name);
+                    println!("Created new wallet: {wallet_name}");
                     Ok(CreateWalletResult {
                         name: result.name,
                         warning: result.warning,
@@ -358,11 +336,11 @@ fn create_or_load_wallet(
                 }
                 Err(e) => {
                     // If creation also fails, it might already be loaded or there's another issue
-                    println!("Warning: Could not create wallet {}: {:?}", wallet_name, e);
+                    println!("Warning: Could not create wallet {wallet_name}: {e:?}");
                     // Try to proceed assuming the wallet exists
                     Ok(CreateWalletResult {
                         name: wallet_name.to_string(),
-                        warning: Some(format!("Could not create/load wallet: {:?}", e)),
+                        warning: Some(format!("Could not create/load wallet: {e:?}")),
                     })
                 }
             }
