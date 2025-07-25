@@ -55,7 +55,7 @@ struct TransactionDetail {
     blockhash: String,
     blockheight: u64,
     decoded: DecodedTransaction,
-    fee: f64,
+    fee: Option<f64>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -223,6 +223,9 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("  TXID: {txid}");
     println!("  Base fee: {} BTC", mempool_entry.fees.base);
 
+    // Store the fee from mempool for later use
+    let mempool_fee = mempool_entry.fees.base;
+
     // Step 7: Mine 1 block to confirm the transaction
     println!("\n=== Mining Block to Confirm Transaction ===");
     let confirmation_blocks = rpc.generate_to_address(1, &mining_address)?;
@@ -246,7 +249,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let transaction_id = tx_detail.txid;
     let block_hash = tx_detail.blockhash;
     let block_height = tx_detail.blockheight;
-    let transaction_fee = tx_detail.fee.abs(); // Make sure fee is positive
+    let transaction_fee = tx_detail.fee.unwrap_or(mempool_fee).abs(); // Use mempool fee if gettransaction doesn't include fee
 
     // Get input details (from the first vin which should be the miner's input)
     let input = &tx_detail.decoded.vin[0];
