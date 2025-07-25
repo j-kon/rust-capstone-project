@@ -220,7 +220,7 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("\n=== Checking Transaction in Mempool ===");
     let mempool_entry: MempoolEntry = rpc.call("getmempoolentry", &[json!(txid.to_string())])?;
     println!("Transaction found in mempool:");
-    println!("  TXID: {}", txid);
+    println!("  TXID: {txid}");
     println!("  Base fee: {} BTC", mempool_entry.fees.base);
 
     // Step 7: Mine 1 block to confirm the transaction
