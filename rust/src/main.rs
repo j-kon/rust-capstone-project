@@ -250,16 +250,37 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
     // Get input details (from the first vin which should be the miner's input)
     let input = &tx_detail.decoded.vin[0];
-    let miner_input_address = input
-        .prevout
-        .as_ref()
-        .and_then(|p| p.script_pub_key.address.as_ref())
-        .expect("Could not find miner input address");
-    let miner_input_amount = input
-        .prevout
-        .as_ref()
-        .map(|p| p.value)
-        .expect("Could not find miner input amount");
+    
+    // For coinbase transactions, we need to get the input address by looking up the previous transaction
+    let (miner_input_address, miner_input_amount) = if let (Some(prev_txid), Some(prev_vout)) = (&input.txid, input.vout) {
+        // Get the previous transaction to find the input details
+        let prev_tx_detail: TransactionDetail = miner_rpc.call(
+            "gettransaction",
+            &[
+                json!(prev_txid),
+                json!(null), // include_watchonly
+                json!(true), // verbose (include decoded transaction)
+            ],
+        )?;
+        
+        // Get the output from the previous transaction that this input is spending
+        let prev_output = &prev_tx_detail.decoded.vout[prev_vout as usize];
+        let address = prev_output.script_pub_key.address.as_ref()
+            .expect("Could not find address in previous output").to_string();
+        let amount = prev_output.value;
+        
+        (address, amount)
+    } else {
+        // Fallback: try to get from prevout if available
+        if let Some(prevout) = &input.prevout {
+            let address = prevout.script_pub_key.address.as_ref()
+                .expect("Could not find miner input address").to_string();
+            let amount = prevout.value;
+            (address, amount)
+        } else {
+            panic!("Could not find miner input address - no prevout or previous transaction info");
+        }
+    };
 
     // Find trader output (should be 20 BTC to trader address)
     let trader_output = tx_detail
